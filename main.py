@@ -10,6 +10,7 @@ from urllib.parse import urljoin, urlparse
 import base64
 import re
 from urllib.parse import quote
+import shutil
 
 INPUT_FILE: str = "arxiv_urls.txt"
 AR5IV_BASE_URL: str = "https://ar5iv.labs.arxiv.org/html/"
@@ -99,6 +100,12 @@ def process_arxiv_url(url: str, epub_output_folder: str = None, pdf_output_folde
             html_content: str = fetch_ar5iv_html_and_images(arxiv_id, epub_output_folder)
             generate_epub(html_content=html_content, output_path=epub_output_path)
             print(f"Generated EPUB: {epub_output_path}")
+            
+            # Cleanup image folder after EPUB generation
+            image_dir = os.path.join(epub_output_folder, f"{arxiv_id}_images")
+            if os.path.exists(image_dir):
+                shutil.rmtree(image_dir)
+                print(f"Removed image folder: {image_dir}")
         else:
             print(f"Skipping EPUB generation - file already exists: {epub_output_path}")
     
