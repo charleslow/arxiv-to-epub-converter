@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Description: This script watches for changes in a specified input file and
-# triggers the processing of arXiv papers to EPUB format using a Python script.
+# triggers the processing of arXiv papers to EPUB and/or PDF format using a Python script.
 # It continuously polls the input file and runs the conversion when changes are detected.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -10,12 +10,13 @@ POLL_INTERVAL=30  # Check every 30 seconds
 
 # Function to display usage information
 show_help() {
-    echo "Usage: $0 -in <input_file> -out <output_folder>"
+    echo "Usage: $0 --input <input_file> --epub-output <epub_output_folder> --pdf-output <pdf_output_folder>"
     echo
     echo "Options:"
     echo "  -h, --help     Show this help message and exit"
-    echo "  -in            Specify the input file to watch"
-    echo "  -out           Specify the output folder for converted EPUBs"
+    echo "  --input         Specify the input file to watch"
+    echo "  --epub-output   Specify the output folder for converted EPUBs (optional)"
+    echo "  --pdf-output    Specify the output folder for downloaded PDFs (optional)"
     exit 0
 }
 
@@ -25,12 +26,16 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             show_help
             ;;
-        -in)
+        --input)
             INPUT_FILE="$2"
             shift 2
             ;;
-        -out)
-            OUTPUT_FOLDER="$2"
+        --epub-output)
+            EPUB_OUTPUT_FOLDER="$2"
+            shift 2
+            ;;
+        --pdf-output)
+            PDF_OUTPUT_FOLDER="$2"
             shift 2
             ;;
         *)
@@ -42,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if required arguments are provided
-if [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FOLDER" ]; then
-    echo "Error: Both -in and -out arguments are required"
+if [ -z "$INPUT_FILE" ]; then
+    echo "Error: --input argument is required"
     echo "Use -h or --help for usage information"
     exit 1
 fi
@@ -68,7 +73,9 @@ while true; do
     
     if [ "$current_modified" != "$last_modified" ]; then
         echo "Change detected in $INPUT_FILE. Processing..."
-        poetry run python "$PYTHON_SCRIPT" -in "$INPUT_FILE" -out "$OUTPUT_FOLDER"
+        poetry run python "$PYTHON_SCRIPT" --input "$INPUT_FILE" \
+            ${EPUB_OUTPUT_FOLDER:+--epub-output "$EPUB_OUTPUT_FOLDER"} \
+            ${PDF_OUTPUT_FOLDER:+--pdf-output "$PDF_OUTPUT_FOLDER"}
         last_modified=$current_modified
     fi
     

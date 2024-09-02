@@ -21,7 +21,7 @@ RUN poetry install --no-interaction --no-ansi --no-root
 COPY main.py main.sh ./
 
 # Create input and output directories with default names
-RUN mkdir epubs && touch arxiv_urls.txt
+RUN mkdir epubs && mkdir pdfs && touch arxiv_urls.txt
 
 # Run the script with default values
-CMD bash main.sh -in ./arxiv_urls.txt -out ./epubs/
+CMD bash main.sh --input ./arxiv_urls.txt --epub-output ./epubs/ --pdf-output ./pdfs/

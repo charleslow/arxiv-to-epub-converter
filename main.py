@@ -12,8 +12,8 @@ import re
 from urllib.parse import quote
 
 INPUT_FILE: str = "arxiv_urls.txt"
-OUTPUT_FOLDER: str = "epubs"
 AR5IV_BASE_URL: str = "https://ar5iv.labs.arxiv.org/html/"
+ARXIV_PDF_BASE_URL: str = "https://arxiv.org/pdf/"
 
 def fetch_ar5iv_html_and_images(arxiv_id: str, output_folder: str) -> str:
     url: str = f"{AR5IV_BASE_URL}{arxiv_id}"
@@ -61,6 +61,15 @@ def generate_epub(html_content: str, output_path: str) -> None:
         ]
     )
 
+def download_pdf(arxiv_id: str, pdf_output_path: str) -> None:
+    pdf_url = f"{ARXIV_PDF_BASE_URL}{arxiv_id}.pdf"
+    response = requests.get(pdf_url)
+    if response.status_code == 200:
+        with open(pdf_output_path, 'wb') as f:
+            f.write(response.content)
+        print(f"Downloaded PDF: {pdf_output_path}")
+    else:
+        print(f"Failed to download PDF: {pdf_url}")
 
 def get_arxiv_metadata(arxiv_id: str) -> Dict[str, str]:
     client = arxiv.Client()
@@ -72,40 +81,52 @@ def get_arxiv_metadata(arxiv_id: str) -> Dict[str, str]:
         'year': str(paper.published.year)
     }
 
-def get_output_filename(url: str, output_folder: str) -> str:
+def get_output_filename(url: str) -> str:
     arxiv_id: str = url.split('/')[-1]
     metadata: Dict[str, str] = get_arxiv_metadata(arxiv_id)
     filename: str = f"{metadata['authors']} {metadata['year']} - {metadata['title']}"
     filename = ''.join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
-    return os.path.join(output_folder, f"{filename}.epub")
+    return filename
 
-def process_arxiv_url(url: str, output_folder: str) -> None:
+def process_arxiv_url(url: str, epub_output_folder: str = None, pdf_output_folder: str = None) -> None:
     print(f"Processing {url}..")
     arxiv_id: str = url.split('/')[-1]
-    html_content: str = fetch_ar5iv_html_and_images(arxiv_id, output_folder)
-    output_path: str = get_output_filename(url, output_folder)
+    filename: str = get_output_filename(url)
     
-    generate_epub(html_content, output_path)
-    print(f"Generated EPUB: {output_path}")
+    if epub_output_folder:
+        epub_output_path: str = os.path.join(epub_output_folder, f"{filename}.epub")
+        if not os.path.exists(epub_output_path):
+            html_content: str = fetch_ar5iv_html_and_images(arxiv_id, epub_output_folder)
+            generate_epub(html_content=html_content, output_path=epub_output_path)
+            print(f"Generated EPUB: {epub_output_path}")
+        else:
+            print(f"Skipping EPUB generation - file already exists: {epub_output_path}")
+    
+    if pdf_output_folder:
+        pdf_output_path: str = os.path.join(pdf_output_folder, f"{filename}.pdf")
+        if not os.path.exists(pdf_output_path):
+            download_pdf(arxiv_id=arxiv_id, pdf_output_path=pdf_output_path)
+        else:
+            print(f"Skipping PDF download - file already exists: {pdf_output_path}")
 
-def process_input_file(input_file: str, output_folder: str):
+def process_input_file(input_file: str, epub_output_folder: str = None, pdf_output_folder: str = None):
     if os.path.exists(input_file):
         with open(input_file, 'r') as f:
             urls: List[str] = f.read().splitlines()
         for url in urls:
             if url.strip():
-                output_path = get_output_filename(url.strip(), output_folder) 
-                if os.path.exists(output_path):
-                    print(f"Skipping {url} - EPUB already exists: {output_path}")
-                else:
-                    process_arxiv_url(url.strip(), output_folder)
+                process_arxiv_url(url.strip(), epub_output_folder, pdf_output_folder)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process arXiv URLs to EPUB files.")
+    parser = argparse.ArgumentParser(description="Process arXiv URLs to EPUB and/or PDF files.")
     parser.add_argument("-in", "--input", required=True, help="Input file containing arXiv URLs")
-    parser.add_argument("-out", "--output", required=True, help="Output folder for EPUB files")
+    parser.add_argument("--epub-output", help="Output folder for EPUB files (optional)")
+    parser.add_argument("--pdf-output", help="Output folder for PDF files (optional)")
     args = parser.parse_args()
 
-    os.makedirs(args.output, exist_ok=True)
-    process_input_file(args.input, args.output)
+    if args.epub_output:
+        os.makedirs(args.epub_output, exist_ok=True)
+    if args.pdf_output:
+        os.makedirs(args.pdf_output, exist_ok=True)
+    process_input_file(args.input, args.epub_output, args.pdf_output)
     print("Finished processing.")
