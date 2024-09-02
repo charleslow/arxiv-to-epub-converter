@@ -49,30 +49,27 @@ def fetch_ar5iv_html_and_images(arxiv_id: str, output_folder: str) -> str:
     return str(soup)
 
 def generate_epub(html_content: str, output_path: str) -> None:
-    # Pre-process LaTeX equations
-    def replace_equation(match):
-        equation = match.group(1)
-        encoded_equation = quote(equation)
-        return f'<img src="https://latex.codecogs.com/svg.latex?{encoded_equation}" alt="{equation}" class="math-equation">'
+    # Convert to EPUB using Pandoc with built-in LaTeX to MathML conversion
+    pypandoc.convert_text(
+        html_content,
+        to='epub',
+        format='html',
+        outputfile=output_path,
+        extra_args=[
+            '--mathml',
+            '--epub-stylesheet=custom.css'
+        ]
+    )
 
-    html_content = re.sub(r'\$\$(.*?)\$\$', replace_equation, html_content, flags=re.DOTALL)
-    html_content = re.sub(r'\$(.*?)\$', replace_equation, html_content)
+# Create a custom CSS file for equation styling
+custom_css = '''
+.math {
+    font-size: 1em;
+}
+'''
 
-    # Add CSS for equation styling
-    css = '''
-    <style>
-    .math-equation {
-        display: inline-block;
-        vertical-align: middle;
-        max-width: 100%;
-        height: auto;
-    }
-    </style>
-    '''
-    html_content = css + html_content
-
-    # Convert to EPUB
-    pypandoc.convert_text(html_content, to='epub', format='html', outputfile=output_path)
+with open('custom.css', 'w') as f:
+    f.write(custom_css)
 
 def get_arxiv_metadata(arxiv_id: str) -> Dict[str, str]:
     client = arxiv.Client()

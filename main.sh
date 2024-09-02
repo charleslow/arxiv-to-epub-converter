@@ -48,6 +48,16 @@ if [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FOLDER" ]; then
     exit 1
 fi
 
+# Function to handle script termination
+cleanup() {
+    echo
+    echo "Ctrl+C caught. Exiting gracefully..."
+    exit 0
+}
+
+# Set up trap to catch Ctrl+C
+trap cleanup SIGINT
+
 echo "Starting arxiv-to-epub watcher..."
 echo "Polling for changes to $INPUT_FILE every $POLL_INTERVAL seconds. Press Ctrl+C to exit."
 
