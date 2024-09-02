@@ -30,7 +30,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "certifi"
-version = "2024.7.4"
+version = "2024.8.30"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -64,7 +64,7 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "pypandoc"
+name = "pypandoc-binary"
 version = "1.13"
 description = "Thin wrapper for pandoc."
 category = "main"
@@ -133,7 +133,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "94d801b544adf5d75ffd434248127456eea7a393525b83e1e9f71efe858e18d8"
+content-hash = "65ed3ca22d172f6c32f878a282e7166edaf3255677b5fcb5009f466832366c21"
 
 [metadata.files]
 arxiv = []
@@ -142,7 +142,7 @@ certifi = []
 charset-normalizer = []
 feedparser = []
 idna = []
-pypandoc = []
+pypandoc-binary = []
 requests = []
 sgmllib3k = []
 soupsieve = []

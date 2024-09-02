@@ -45,10 +45,10 @@ def fetch_ar5iv_html_and_images(arxiv_id: str, output_folder: str) -> str:
                         img['src'] = os.path.abspath(local_path)
                 except requests.RequestException:
                     print(f"Failed to download image: {full_url}")
-    
     return str(soup)
 
 def generate_epub(html_content: str, output_path: str) -> None:
+    
     # Convert to EPUB using Pandoc with built-in LaTeX to MathML conversion
     pypandoc.convert_text(
         html_content,
@@ -57,19 +57,10 @@ def generate_epub(html_content: str, output_path: str) -> None:
         outputfile=output_path,
         extra_args=[
             '--mathml',
-            '--epub-stylesheet=custom.css'
+            '--webtex',
         ]
     )
 
-# Create a custom CSS file for equation styling
-custom_css = '''
-.math {
-    font-size: 1em;
-}
-'''
-
-with open('custom.css', 'w') as f:
-    f.write(custom_css)
 
 def get_arxiv_metadata(arxiv_id: str) -> Dict[str, str]:
     client = arxiv.Client()
@@ -83,9 +74,7 @@ def get_arxiv_metadata(arxiv_id: str) -> Dict[str, str]:
 
 def get_output_filename(url: str, output_folder: str) -> str:
     arxiv_id: str = url.split('/')[-1]
-    html_content: str = fetch_ar5iv_html_and_images(arxiv_id, output_folder)
     metadata: Dict[str, str] = get_arxiv_metadata(arxiv_id)
-    
     filename: str = f"{metadata['authors']} {metadata['year']} - {metadata['title']}"
     filename = ''.join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
     return os.path.join(output_folder, f"{filename}.epub")
@@ -105,7 +94,7 @@ def process_input_file(input_file: str, output_folder: str):
             urls: List[str] = f.read().splitlines()
         for url in urls:
             if url.strip():
-                output_path = get_output_filename(url.strip(), output_folder)
+                output_path = get_output_filename(url.strip(), output_folder) 
                 if os.path.exists(output_path):
                     print(f"Skipping {url} - EPUB already exists: {output_path}")
                 else:
