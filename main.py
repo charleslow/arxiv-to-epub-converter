@@ -49,15 +49,31 @@ def fetch_ar5iv_html_and_images(arxiv_id: str, output_folder: str) -> str:
     return str(soup)
 
 def generate_epub(html_content: str, output_path: str) -> None:
-    
-    # Convert to EPUB using Pandoc with built-in LaTeX to MathML conversion
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    # Find all math elements
+    math_elements = soup.find_all('math')
+
+    for math in math_elements:
+        # Find the LaTeX annotation
+        latex = math.find('annotation', {'encoding': 'application/x-tex'})
+        if latex:
+            # Remove all mathml stuff and replace with normal latex
+            # webtex will then convert these into embedded inline images
+            new_script = soup.new_tag('script', type='math/tex')
+            new_script.string = latex.string.strip()
+            math.replace_with(new_script)
+        else:
+            # If no LaTeX found, remove the math element
+            math.decompose()
+
+    # Convert to EPUB using Pandoc
     pypandoc.convert_text(
-        html_content,
+        str(soup),
         to='epub',
         format='html',
         outputfile=output_path,
         extra_args=[
-            '--mathml',
             '--webtex',
         ]
     )
